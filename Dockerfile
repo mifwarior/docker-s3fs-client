@@ -1,40 +1,4 @@
-ARG ALPINE_VERSION=3.17.1
-FROM alpine:$ALPINE_VERSION AS build
-
-ARG S3FS_VERSION=v1.91
-
-RUN apk --no-cache add \
-    ca-certificates \
-    build-base \
-    git \
-    alpine-sdk \
-    libcurl \
-    automake \
-    autoconf \
-    libxml2-dev \
-    mailcap \
-    fuse-dev \
-    curl-dev && \
-  git clone https://github.com/s3fs-fuse/s3fs-fuse.git && \
-  cd s3fs-fuse && \
-  git checkout tags/${S3FS_VERSION} && \
-  ./autogen.sh && \
-  ./configure --prefix=/usr && \
-  make -j && \
-  make install
-
-FROM alpine:$ALPINE_VERSION
-
-# Metadata
-LABEL MAINTAINER=efrecon+github@gmail.com
-LABEL org.opencontainers.image.title="efrecon/s3fs"
-LABEL org.opencontainers.image.description="Mount S3 buckets from within a container and expose them to host/containers"
-LABEL org.opencontainers.image.authors="Emmanuel Frécon <efrecon+github@gmail.com>"
-LABEL org.opencontainers.image.url="https://github.com/efrecon/docker-s3fs-client"
-LABEL org.opencontainers.image.documentation="https://github.com/efrecon/docker-s3fs-client/README.md"
-LABEL org.opencontainers.image.source="https://github.com/efrecon/docker-s3fs-client/Dockerfile"
-
-COPY --from=build /usr/bin/s3fs /usr/bin/s3fs
+FROM node:18-buster
 
 # Specify URL and secrets. When using AWS_S3_SECRET_ACCESS_KEY_FILE, the secret
 # key will be read from that file itself, which helps passing further passwords
@@ -60,16 +24,10 @@ ENV S3FS_DEBUG=0
 ENV S3FS_ARGS=
 
 RUN mkdir /opt/s3fs && \
-    apk --no-cache add \
+    apt update &&\
+    apt install \
       ca-certificates \
-      mailcap \
-      fuse \
-      libxml2 \
-      libcurl \
-      libgcc \
-      libstdc++ \
-      tini && \
-    deluser xfs && \
+      s3fs tini -y && \
     s3fs --version
 
 # allow access to volume by different user to enable UIDs other than root when
